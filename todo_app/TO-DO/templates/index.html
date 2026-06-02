@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Todo App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" />
+    <style>
+        .rotate {
+          transform: rotate(180deg);
+          transition: transform .2s;
+        }
+        </style>
+        
+</head>
+
+<body class="bg-gray-100 text-gray-800 p-6">
+    <h1 class="text-3xl font-bold mb-4 text-center">Todo App</h1>
+
+    <div class="max-w-xl mx-auto bg-white shadow-md p-4 rounded-lg">
+
+        <!-- ADD FORM -->
+        <form id="taskForm" class="flex gap-2 mb-4">
+            <input type="text" id="task" placeholder="Enter Task" class="flex-1 border p-2 rounded" required />
+            <input type="date" id="day" class="border p-2 rounded" />
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">Add</button>
+        </form>
+
+        <!-- TASK TABLE -->
+        <table class="w-full border-collapse">
+            <thead>
+                <tr class="bg-gray-200 text-left">
+                    <th class="p-2 border">ID</th>
+                    <th class="p-2 border">Task</th>
+                    <th class="p-2 border">Day</th>
+                    <th class="p-2 border">Status</th>
+                    <th class="p-2 border">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="taskTable"></tbody>
+        </table>
+
+      
+<!-- TODAY -->
+<div class="mt-4">
+    <p class="text-sm text-gray-600 mb-1 tracking-wide">Today's Tasks</p>
+
+    <button onclick="toggleToday()"
+        class="w-full flex justify-between items-center bg-gray-200 hover:bg-gray-300 
+               px-3 py-1 rounded-sm shadow-sm transition text-sm">
+        <span></span>
+        <span id="todayArrow" class="text-gray-600 text-xs">▼</span>
+    </button>
+
+    <div id="todayBox" class="hidden bg-gray-100 p-2 rounded-sm text-gray-800 shadow-inner mt-1"></div>
+</div>
+
+
+<!-- OVERDUE -->
+<div class="mt-4">
+    <p class="text-sm text-gray-600 mb-1 tracking-wide">Overdue Tasks</p>
+
+    <button onclick="toggleOverdue()"
+        class="w-full flex justify-between items-center bg-gray-200 hover:bg-gray-300 
+               px-3 py-1 rounded-sm shadow-sm transition text-sm">
+        <span></span>
+        <span id="overdueArrow" class="text-gray-600 text-xs">▼</span>
+    </button>
+
+    <div id="overdueBox" class="hidden bg-gray-100 p-2 rounded-sm text-gray-800 shadow-inner mt-1"></div>
+</div>
+<!-- TODAY -->
+
+    </div>
+
+
+<script>
+    async function loadTasks() {
+        const res = await fetch('/api/task/all');
+        const data = await res.json();
+        const table = document.getElementById('taskTable');
+        table.innerHTML = '';
+
+        data.forEach(row => {
+            table.innerHTML += `
+            <tr>
+                <td class="border p-2">${row[0]}</td>
+                <td class="border p-2">${row[1]}</td>
+                <td class="border p-2">${row[2] || ''}</td>
+                <td class="border p-2">${row[5]}</td>
+                <td class="border p-2 space-x-2">
+                    <button onclick="complete(${row[0]})" class="text-green-600">Complete</button>
+                    <button onclick="remove(${row[0]})" class="text-red-600">Delete</button>
+                    <button onclick="reset(${row[0]})" class="text-blue-600">Reset</button>
+                </td>
+            </tr>`;
+        });
+    }
+
+    document.getElementById('taskForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        formData.append('task', document.getElementById('task').value);
+        formData.append('day', document.getElementById('day').value);
+        await fetch('/api/task/add', { method: 'POST', body: formData });
+        loadTasks();
+    });
+
+    async function complete(id){ const f=new FormData();f.append('id',id); await fetch('/api/task/complete',{method:'POST',body:f}); loadTasks(); }
+    async function remove(id){ const f=new FormData();f.append('id',id); await fetch('/api/task/delete',{method:'POST',body:f}); loadTasks(); }
+    async function reset(id){ const f=new FormData();f.append('id',id); await fetch('/api/task/reset',{method:'POST',body:f}); loadTasks(); }
+
+    async function loadToday() {
+        const res = await fetch('/api/task/today');
+        const data = await res.json();
+        const box = document.getElementById('todayBox');
+        box.innerHTML = data.length === 0 ? "No tasks for today 🙂" : data.map(r => `• ${r[1]} (${r[3]})`).join("<br>");
+    }
+
+    async function loadOverdue() {
+        const res = await fetch('/api/task/overdue');
+        const data = await res.json();
+        const box = document.getElementById('overdueBox');
+        box.innerHTML = data.length === 0 ? "No overdue tasks 🎉" : data.map(r => `• ${r[1]} (Was due: ${r[2]})`).join("<br>");
+    }
+
+    function toggleToday() {
+    document.getElementById("todayBox").classList.toggle("hidden");
+    document.getElementById("todayArrow").classList.toggle("rotate");
+}
+
+function toggleOverdue() {
+    document.getElementById("overdueBox").classList.toggle("hidden");
+    document.getElementById("overdueArrow").classList.toggle("rotate");
+}
+
+
+
+    loadTasks();
+    loadToday();
+    loadOverdue();
+</script>
+
+</body>
+</html>

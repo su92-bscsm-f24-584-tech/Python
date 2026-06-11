@@ -1,2 +1,2 @@
-# expense_measure
-a personal expense measuring all your day expense with graph
+# Expense_measure
+By Python personal expense measuring all your day expense with graph
